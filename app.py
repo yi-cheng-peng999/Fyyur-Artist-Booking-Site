@@ -21,9 +21,8 @@ from config import SQLALCHEMY_DATABASE_URI
 app = Flask(__name__)
 moment = Moment(app)
 app.config.from_object('config')
-#db = SQLAlchemy(app)
 
-# TODO: connect to a local postgresql database
+# Done: connect to a local postgresql database
 app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
@@ -31,7 +30,6 @@ db = SQLAlchemy(app)
 #----------------------------------------------------------------------------#
 # Models.
 #----------------------------------------------------------------------------#
-
 class Venue(db.Model):
     __tablename__ = 'Venue'
 
@@ -44,7 +42,12 @@ class Venue(db.Model):
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
 
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
+    # # DONE: implement any missing fields, as a database migration using Flask-Migrate
+    # genres = db.Column(db.ARRAY(db.String))
+    # website = db.Column(db.String(120))
+    # seeking_talent = db.Column(db.Boolean)
+    # seeking_description = db.Column(db.String(120))
+    # venue = db.relationship("Show", back_populates="venue")
 
 class Artist(db.Model):
     __tablename__ = 'Artist'
@@ -54,14 +57,26 @@ class Artist(db.Model):
     city = db.Column(db.String(120))
     state = db.Column(db.String(120))
     phone = db.Column(db.String(120))
-    genres = db.Column(db.String(120))
+    genres = db.Column(db.ARRAY(db.String))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
 
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
+    # # DONE: implement any missing fields, as a database migration using Flask-Migrate
+    # website = db.Column(db.String(120))
+    # seeking_venue = db.Column(db.Boolean)
+    # seeking_description = db.Column(db.String(120))
+    # artist = db.relationship("Show", back_populates="artist")
 
-# TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
+# # DONE Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
+# class Show(db.Model):
+#   __tablename__ = 'Show'
+#   venue_id = db.Column(db.ForeignKey('venue.id'), primary_key=True)
+#   artist_id = db.Column(db.ForeignKey('artist.id'), primary_key=True)
+#   start_time = db.Column(db.DateTime)
+#   venue = db.relationship('Venue', back_populates='show')
+#   artist = db.relationship('Artist', back_populates='show')
 
+db.create_all()
 #----------------------------------------------------------------------------#
 # Filters.
 #----------------------------------------------------------------------------#
