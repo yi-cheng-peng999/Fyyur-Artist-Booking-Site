@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------#
 # Imports
 #----------------------------------------------------------------------------#
-
+import datetime
 import json
 import sys
 
@@ -15,7 +15,7 @@ import logging
 from logging import Formatter, FileHandler
 from flask_wtf import Form
 from forms import *
-from config import SQLALCHEMY_DATABASE_URI 
+from config import SQLALCHEMY_DATABASE_URI
 
 #----------------------------------------------------------------------------#
 # App Config.
@@ -76,8 +76,9 @@ class Artist(db.Model):
 # DONE Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
 class Show(db.Model):
   __tablename__ = 'Show'
-  venue_id = db.Column(db.ForeignKey('Venue.id'), primary_key=True)
-  artist_id = db.Column(db.ForeignKey('Artist.id'), primary_key=True)
+  id = db.Column(db.Integer, primary_key=True)
+  venue_id = db.Column(db.ForeignKey('Venue.id'))
+  artist_id = db.Column(db.ForeignKey('Artist.id'))
   start_time = db.Column(db.DateTime, nullable=False)
 
 #----------------------------------------------------------------------------#
@@ -108,30 +109,32 @@ def index():
 
 @app.route('/venues')
 def venues():
-  # TODO: replace with real venues data.
+  # DONE: replace with real venues data.
   #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
-  data=[{
-    "city": "San Francisco",
-    "state": "CA",
-    "venues": [{
-      "id": 1,
-      "name": "The Musical Hop",
-      "num_upcoming_shows": 0,
-    }, {
-      "id": 3,
-      "name": "Park Square Live Music & Coffee",
-      "num_upcoming_shows": 1,
-    }]
-  }, {
-    "city": "New York",
-    "state": "NY",
-    "venues": [{
-      "id": 2,
-      "name": "The Dueling Pianos Bar",
-      "num_upcoming_shows": 0,
-    }]
-  }]
-  return render_template('pages/venues.html', areas=data);
+  city_state_venue = {}
+  venues = Venue.query.all()
+  for venue in venues:
+    city_state = (venue.city, venue.state)
+    if city_state not in city_state_venue:
+      city_state_venue[city_state] = []
+
+    cnt = Show.query.filter(Show.venue_id == venue.id, Show.start_time > datetime.now()).count()
+    query_result = {
+      'id': venue.id,
+      'name': venue.name,
+      'num_upcoming_shows': cnt
+    }
+    city_state_venue[city_state].append(query_result)
+
+  result = []
+  for city_state, venue_list in city_state_venue.items():
+    result.append({
+      'city': city_state[0],
+      'state': city_state[1],
+      'venues': venue_list
+    })
+
+  return render_template('pages/venues.html', areas=result)
 
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
@@ -153,18 +156,19 @@ def show_venue(venue_id):
   # shows the venue page with the given venue_id
   # DONE: replace with real venue data from the venues table, using venue_id
   data = Venue.query.get(venue_id)
-  data.past_shows = []
-  data.upcoming_shows = []
-  shows = Show.query.filter_by(venue_id=venue_id).all()
-  for show in shows:
-    show.artist_name = show.artist.name
-    show.artist_image_link = show.artist.image_link
-    if show.start_time > datetime.now():
-      show.start_time = format_datetime(str(show.start_time))
-      data.upcoming_shows.append(show)
-    else:
-      show.start_time = format_datetime(str(show.start_time))
-      data.past_shows.append(show)
+  if data:
+    data.past_shows = []
+    data.upcoming_shows = []
+    shows = Show.query.filter_by(venue_id=venue_id).all()
+    for show in shows:
+      show.artist_name = show.artist.name
+      show.artist_image_link = show.artist.image_link
+      if show.start_time > datetime.now():
+        show.start_time = format_datetime(str(show.start_time))
+        data.upcoming_shows.append(show)
+      else:
+        show.start_time = format_datetime(str(show.start_time))
+        data.past_shows.append(show)
 
   return render_template('pages/show_venue.html', venue=data)
 
@@ -253,18 +257,19 @@ def show_artist(artist_id):
   # shows the artist page with the given artist_id
   # DONE: replace with real artist data from the artist table, using artist_id
   data = Artist.query.get(artist_id)
-  data.past_shows = []
-  data.upcoming_shows = []
-  shows = Show.query.filter_by(artist_id=artist_id).all()
-  for show in shows:
-    show.artist_name = show.artist.name
-    show.artist_image_link = show.artist.image_link
-    if show.start_time > datetime.now():
-      show.start_time = format_datetime(str(show.start_time))
-      data.upcoming_shows.append(show)
-    else:
-      show.start_time = format_datetime(str(show.start_time))
-      data.past_shows.append(show)
+  if data:
+    data.past_shows = []
+    data.upcoming_shows = []
+    shows = Show.query.filter_by(artist_id=artist_id).all()
+    for show in shows:
+      show.artist_name = show.artist.name
+      show.artist_image_link = show.artist.image_link
+      if show.start_time > datetime.now():
+        show.start_time = format_datetime(str(show.start_time))
+        data.upcoming_shows.append(show)
+      else:
+        show.start_time = format_datetime(str(show.start_time))
+        data.past_shows.append(show)
 
   return render_template('pages/show_artist.html', artist=data)
 
