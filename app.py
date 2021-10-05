@@ -293,14 +293,44 @@ def show_artist(artist_id):
 def edit_artist(artist_id):
   form = ArtistForm()
   artist = Artist.query.get(artist_id).__dict__
+  form.genres.data = [(genre) for genre in artist['genres']]
 
   # DONE: populate form with fields from artist with ID <artist_id>
   return render_template('forms/edit_artist.html', form=form, artist=artist)
 
 @app.route('/artists/<int:artist_id>/edit', methods=['POST'])
 def edit_artist_submission(artist_id):
-  # TODO: take values from the form submitted, and update existing
+  # DONE: take values from the form submitted, and update existing
   # artist record with ID <artist_id> using the new attributes
+  try:
+    artist = Artist.query.get(artist_id)
+    form = ArtistForm()
+    if form.name.data != artist.name:
+      artist.name = form.name.data
+    if form.city.data != artist.city:
+      artist.city = form.city.data
+    if form.state.data != artist.state:
+      artist.state = form.state.data
+    if form.phone.data != artist.phone:
+      artist.phone = form.phone.data
+    if form.genres.data != artist.genres:
+      artist.genres = form.genres.data
+    if form.image_link.data != artist.image_link:
+      artist.image_link = form.image_link.data
+    if form.facebook_link.data != artist.facebook_link:
+      artist.facebook_link = form.facebook_link.data
+    if form.website_link.data != artist.website_link:
+      artist.website_link = form.website_link.data
+    if form.seeking_venue.data != artist.seeking_venue:
+      artist.seeking_venue = form.seeking_venue.data
+    if form.seeking_description.data != artist.seeking_description:
+      artist.seeking_description = form.seeking_description.data
+    db.session.commit()
+  except Exception as e:
+    flash(e)
+    db.session.rollback()
+  finally:
+    db.session.close()
 
   return redirect(url_for('show_artist', artist_id=artist_id))
 
@@ -308,14 +338,47 @@ def edit_artist_submission(artist_id):
 def edit_venue(venue_id):
   form = VenueForm()
   venue = Venue.query.get(venue_id).__dict__
+  form.genres.data = [(genre) for genre in venue['genres']]
 
   # DONE: populate form with values from venue with ID <venue_id>
   return render_template('forms/edit_venue.html', form=form, venue=venue)
 
 @app.route('/venues/<int:venue_id>/edit', methods=['POST'])
 def edit_venue_submission(venue_id):
-  # TODO: take values from the form submitted, and update existing
+  # DONE: take values from the form submitted, and update existing
   # venue record with ID <venue_id> using the new attributes
+  try:
+    venue = Venue.query.get(venue_id)
+    form = VenueForm()
+    if form.name.data != venue.name:
+      venue.name = form.name.data
+    if form.city.data != venue.city:
+      venue.city = form.city.data
+    if form.state.data != venue.state:
+      venue.state = form.state.data
+    if form.address.data != venue.address:
+      venue.address = form.address.data
+    if form.phone.data != venue.phone:
+      venue.phone = form.phone.data
+    if form.genres.data != venue.genres:
+      venue.genres = form.genres.data
+    if form.image_link.data != venue.image_link:
+      venue.image_link = form.image_link.data
+    if form.facebook_link.data != venue.facebook_link:
+      venue.facebook_link = form.facebook_link.data
+    if form.website_link.data != venue.website_link:
+      venue.website_link = form.website_link.data
+    if form.seeking_talent.data != venue.seeking_talent:
+      venue.seeking_talent = form.seeking_talent.data
+    if form.seeking_description.data != venue.seeking_description:
+      venue.seeking_description = form.seeking_description.data
+    db.session.commit()
+  except Exception as e:
+    flash(e)
+    db.session.rollback()
+  finally:
+    db.session.close()
+
   return redirect(url_for('show_venue', venue_id=venue_id))
 
 #  Create Artist
