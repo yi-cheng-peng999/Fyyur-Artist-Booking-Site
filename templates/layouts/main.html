@@ -112,7 +112,26 @@
       {% block footer %}{% endblock %}
     </div>
   </div>
-
+  <script>
+  const deleteBtns = document.querySelectorAll('.delete-button');
+  for (let i = 0; i < deleteBtns.length; i++) {
+      const btn = deleteBtns[i];
+      btn.onclick = function(e) {
+        const venue_id = e.target.dataset['id'];
+        fetch('/venues/' + venue_id, {
+          method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+          console.log('Success:', data);
+          location.replace("http://127.0.0.1:5000")
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+        });
+      }
+  }
+  </script>
   <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
   <script>window.jQuery || document.write('<script type="text/javascript" src="/static/js/libs/jquery-1.11.1.min.js"><\/script>')</script>
   <script type="text/javascript" src="/static/js/libs/bootstrap-3.1.1.min.js" defer></script>
