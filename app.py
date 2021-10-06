@@ -1,85 +1,15 @@
 #----------------------------------------------------------------------------#
 # Imports
 #----------------------------------------------------------------------------#
-import datetime
-import json
-import sys
-
 import dateutil.parser
 import babel
-from flask import Flask, render_template, request, Response, flash, redirect, url_for, jsonify
-from flask_moment import Moment
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
+import datetime
+import sys
+from flask import render_template, request, flash, redirect, url_for, jsonify
 import logging
 from logging import Formatter, FileHandler
-from flask_wtf import Form
 from forms import *
-from config import SQLALCHEMY_DATABASE_URI
-
-#----------------------------------------------------------------------------#
-# App Config.
-#----------------------------------------------------------------------------#
-
-app = Flask(__name__)
-moment = Moment(app)
-app.config.from_object('config')
-
-# Done: connect to a local postgresql database
-app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
-migrate = Migrate(app, db)
-#----------------------------------------------------------------------------#
-# Models.
-#----------------------------------------------------------------------------#
-class Venue(db.Model):
-    __tablename__ = 'Venue'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String, nullable=False)
-    city = db.Column(db.String(120), nullable=False)
-    state = db.Column(db.String(120), nullable=False)
-    address = db.Column(db.String(120), nullable=False)
-    phone = db.Column(db.String(120))
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
-
-    # DONE: implement any missing fields, as a database migration using Flask-Migrate
-    genres = db.Column(db.ARRAY(db.String), nullable=False)
-    website = db.Column(db.String(120))
-    seeking_talent = db.Column(db.Boolean)
-    seeking_description = db.Column(db.String(120))
-    venue = db.relationship("Show", backref="venue")
-
-    def __repr__(self):
-      return f'Venue {self.name}'
-
-class Artist(db.Model):
-    __tablename__ = 'Artist'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String, nullable=False)
-    city = db.Column(db.String(120), nullable=False)
-    state = db.Column(db.String(120), nullable=False)
-    phone = db.Column(db.String(120))
-    genres = db.Column(db.ARRAY(db.String), nullable=False)
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
-
-    # DONE: implement any missing fields, as a database migration using Flask-Migrate
-    website = db.Column(db.String(120))
-    seeking_venue = db.Column(db.Boolean)
-    seeking_description = db.Column(db.String(120))
-    artist = db.relationship("Show", backref="artist")
-
-# DONE Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
-class Show(db.Model):
-  __tablename__ = 'Show'
-  id = db.Column(db.Integer, primary_key=True)
-  venue_id = db.Column(db.ForeignKey('Venue.id'))
-  artist_id = db.Column(db.ForeignKey('Artist.id'))
-  start_time = db.Column(db.DateTime, nullable=False)
+from models import app, db, Venue, Artist, Show
 
 #----------------------------------------------------------------------------#
 # Filters.
@@ -94,6 +24,7 @@ def format_datetime(value, format='medium'):
   return babel.dates.format_datetime(date, format, locale='en')
 
 app.jinja_env.filters['datetime'] = format_datetime
+
 
 #----------------------------------------------------------------------------#
 # Controllers.
@@ -112,7 +43,7 @@ def venues():
   # DONE: replace with real venues data.
   #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
   city_state_venue = {}
-  venues = Venue.query.all()
+  venues = Venue.query.order_by(Venue.id).all()
   for venue in venues:
     city_state = (venue.city, venue.state)
     if city_state not in city_state_venue:
@@ -244,7 +175,7 @@ def delete_venue(venue_id):
 @app.route('/artists')
 def artists():
   # DONE: replace with real data returned from querying the database
-  artists = Artist.query.with_entities(Artist.id, Artist.name).all()
+  artists = Artist.query.with_entities(Artist.id, Artist.name).order_by(Artist.id).all()
   def artist_transform(a):
     return {
       'id': a.id,
@@ -287,8 +218,8 @@ def show_artist(artist_id):
     data.upcoming_shows = []
     shows = Show.query.filter_by(artist_id=artist_id).all()
     for show in shows:
-      show.artist_name = show.artist.name
-      show.artist_image_link = show.artist.image_link
+      show.venue_name = show.venue.name
+      show.venue_image_link = show.venue.image_link
       if show.start_time > datetime.now():
         show.start_time = format_datetime(str(show.start_time))
         data.upcoming_shows.append(show)
@@ -316,26 +247,16 @@ def edit_artist_submission(artist_id):
   try:
     artist = Artist.query.get(artist_id)
     form = ArtistForm()
-    if form.name.data != artist.name:
-      artist.name = form.name.data
-    if form.city.data != artist.city:
-      artist.city = form.city.data
-    if form.state.data != artist.state:
-      artist.state = form.state.data
-    if form.phone.data != artist.phone:
-      artist.phone = form.phone.data
-    if form.genres.data != artist.genres:
-      artist.genres = form.genres.data
-    if form.image_link.data != artist.image_link:
-      artist.image_link = form.image_link.data
-    if form.facebook_link.data != artist.facebook_link:
-      artist.facebook_link = form.facebook_link.data
-    if form.website_link.data != artist.website_link:
-      artist.website_link = form.website_link.data
-    if form.seeking_venue.data != artist.seeking_venue:
-      artist.seeking_venue = form.seeking_venue.data
-    if form.seeking_description.data != artist.seeking_description:
-      artist.seeking_description = form.seeking_description.data
+    artist.name = form.name.data
+    artist.city = form.city.data
+    artist.state = form.state.data
+    artist.phone = form.phone.data
+    artist.genres = form.genres.data
+    artist.image_link = form.image_link.data
+    artist.facebook_link = form.facebook_link.data
+    artist.website_link = form.website_link.data
+    artist.seeking_venue = form.seeking_venue.data
+    artist.seeking_description = form.seeking_description.data
     db.session.commit()
   except Exception as e:
     flash(e)
@@ -361,28 +282,17 @@ def edit_venue_submission(venue_id):
   try:
     venue = Venue.query.get(venue_id)
     form = VenueForm()
-    if form.name.data != venue.name:
-      venue.name = form.name.data
-    if form.city.data != venue.city:
-      venue.city = form.city.data
-    if form.state.data != venue.state:
-      venue.state = form.state.data
-    if form.address.data != venue.address:
-      venue.address = form.address.data
-    if form.phone.data != venue.phone:
-      venue.phone = form.phone.data
-    if form.genres.data != venue.genres:
-      venue.genres = form.genres.data
-    if form.image_link.data != venue.image_link:
-      venue.image_link = form.image_link.data
-    if form.facebook_link.data != venue.facebook_link:
-      venue.facebook_link = form.facebook_link.data
-    if form.website_link.data != venue.website_link:
-      venue.website_link = form.website_link.data
-    if form.seeking_talent.data != venue.seeking_talent:
-      venue.seeking_talent = form.seeking_talent.data
-    if form.seeking_description.data != venue.seeking_description:
-      venue.seeking_description = form.seeking_description.data
+    venue.name = form.name.data
+    venue.city = form.city.data
+    venue.state = form.state.data
+    venue.address = form.address.data
+    venue.phone = form.phone.data
+    venue.genres = form.genres.data
+    venue.image_link = form.image_link.data
+    venue.facebook_link = form.facebook_link.data
+    venue.website_link = form.website_link.data
+    venue.seeking_talent = form.seeking_talent.data
+    venue.seeking_description = form.seeking_description.data
     db.session.commit()
   except Exception as e:
     flash(e)
