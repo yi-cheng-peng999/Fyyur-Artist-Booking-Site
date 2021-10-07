@@ -26,7 +26,7 @@ class Venue(db.Model):
     website = db.Column(db.String(120))
     seeking_talent = db.Column(db.Boolean)
     seeking_description = db.Column(db.String(120))
-    venue = db.relationship("Show", backref="venue")
+    shows = db.relationship("Show", backref="venue", lazy='joined', cascade="all, delete")
 
     def __repr__(self):
       return f'Venue {self.name}'
@@ -47,7 +47,7 @@ class Artist(db.Model):
     website = db.Column(db.String(120))
     seeking_venue = db.Column(db.Boolean)
     seeking_description = db.Column(db.String(120))
-    artist = db.relationship("Show", backref="artist")
+    shows = db.relationship("Show", backref="artist", lazy='joined', cascade="all, delete")
 
 # DONE Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
 class Show(db.Model):

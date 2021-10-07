@@ -1,8 +1,6 @@
 #----------------------------------------------------------------------------#
 # Imports
 #----------------------------------------------------------------------------#
-import dateutil.parser
-import babel
 import datetime
 import sys
 from flask import render_template, request, flash, redirect, url_for, jsonify
@@ -10,22 +8,7 @@ import logging
 from logging import Formatter, FileHandler
 from forms import *
 from models import db, Venue, Artist, Show
-from config import app
-
-#----------------------------------------------------------------------------#
-# Filters.
-#----------------------------------------------------------------------------#
-
-def format_datetime(value, format='medium'):
-  date = dateutil.parser.parse(value)
-  if format == 'full':
-      format="EEEE MMMM, d, y 'at' h:mma"
-  elif format == 'medium':
-      format="EE MM, dd, y h:mma"
-  return babel.dates.format_datetime(date, format, locale='en')
-
-app.jinja_env.filters['datetime'] = format_datetime
-
+from config import app, format_datetime
 
 #----------------------------------------------------------------------------#
 # Controllers.
@@ -99,8 +82,7 @@ def show_venue(venue_id):
   if data:
     data.past_shows = []
     data.upcoming_shows = []
-    shows = Show.query.filter_by(venue_id=venue_id).all()
-    for show in shows:
+    for show in data.shows:
       show.artist_name = show.artist.name
       show.artist_image_link = show.artist.image_link
       if show.start_time > datetime.now():
@@ -125,20 +107,9 @@ def create_venue_submission():
   # DONE: insert form data as a new Venue record in the db, instead
   # DONE: modify data to be the data object returned from db insertion
   try:
-    form = VenueForm()
-    venue = Venue(
-      name = form.name.data,
-      city = form.city.data,
-      state = form.state.data,
-      address =form.address.data,
-      phone = form.phone.data,
-      image_link = form.image_link.data,
-      facebook_link = form.facebook_link.data,
-      genres = form.genres.data,
-      website = form.website_link.data,
-      seeking_talent = form.seeking_talent.data,
-      seeking_description = form.seeking_description.data
-    )
+    form = VenueForm(request.form)
+    venue = Venue()
+    form.populate_obj(venue)
     db.session.add(venue)
     db.session.commit()
     flash('Venue ' + request.form['name'] + ' was successfully created!')
@@ -217,8 +188,7 @@ def show_artist(artist_id):
   if data:
     data.past_shows = []
     data.upcoming_shows = []
-    shows = Show.query.filter_by(artist_id=artist_id).all()
-    for show in shows:
+    for show in data.shows:
       show.venue_name = show.venue.name
       show.venue_image_link = show.venue.image_link
       if show.start_time > datetime.now():
@@ -235,7 +205,7 @@ def show_artist(artist_id):
 @app.route('/artists/<int:artist_id>/edit', methods=['GET'])
 def edit_artist(artist_id):
   form = ArtistForm()
-  artist = Artist.query.get(artist_id).__dict__
+  artist = vars(Artist.query.get(artist_id))
   form.genres.data = [(genre) for genre in artist['genres']]
 
   # DONE: populate form with fields from artist with ID <artist_id>
@@ -270,7 +240,7 @@ def edit_artist_submission(artist_id):
 @app.route('/venues/<int:venue_id>/edit', methods=['GET'])
 def edit_venue(venue_id):
   form = VenueForm()
-  venue = Venue.query.get(venue_id).__dict__
+  venue = vars(Venue.query.get(venue_id))
   form.genres.data = [(genre) for genre in venue['genres']]
 
   # DONE: populate form with values from venue with ID <venue_id>
@@ -317,19 +287,9 @@ def create_artist_submission():
   # called upon submitting the new artist listing form
   # DONE: insert form data as a new Venue record in the db, instead
   # DONE: modify data to be the data object returned from db insertion
-    form = ArtistForm()
-    artist = Artist(
-      name = form.name.data,
-      city = form.city.data,
-      state = form.state.data,
-      phone = form.phone.data,
-      genres = form.genres.data,
-      image_link = form.image_link.data,
-      facebook_link = form.facebook_link.data,
-      website = form.website_link.data,
-      seeking_venue = form.seeking_venue.data,
-      seeking_description = form.seeking_description.data
-    )
+    form = ArtistForm(request.form)
+    artist = Artist()
+    form.populate_obj(artist)
     db.session.add(artist)
     db.session.commit()
     # on successful db insert, flash success
@@ -351,14 +311,22 @@ def create_artist_submission():
 def shows():
   # displays list of shows at /shows
   # DONE: replace with real venues data.
-  shows = Show.query.all()
-  for show in shows:
-    venue = Venue.query.get(show.venue_id)
-    artist = Artist.query.get(show.artist_id)
-    show.venue_name = venue.name
-    show.artist_name = artist.name
-    show.artist_image_link = artist.image_link
-    show.start_time = str(show.start_time)
+  results = db.session.query(Show, Venue, Artist)\
+    .join(Venue, Show.venue_id == Venue.id)\
+    .join(Artist, Show.artist_id == Artist.id)\
+    .order_by(Show.start_time)\
+    .all()
+
+  shows = []
+  for show, venue, artist in results:
+    shows.append({
+        "venue_id": venue.id,
+        "venue_name": venue.name,
+        "artist_id": artist.id,
+        "artist_name": artist.name,
+        "artist_image_link": artist.image_link,
+        "start_time": str(show.start_time)
+    })
 
   return render_template('pages/shows.html', shows=shows)
 
