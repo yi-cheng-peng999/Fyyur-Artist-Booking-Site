@@ -1,20 +1,7 @@
-from flask import Flask
-from flask_moment import Moment
-from config import SQLALCHEMY_DATABASE_URI
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from config import app
 
-#----------------------------------------------------------------------------#
-# App Config.
-#----------------------------------------------------------------------------#
-
-app = Flask(__name__)
-moment = Moment(app)
-app.config.from_object('config')
-
-# Done: connect to a local postgresql database
-app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
@@ -66,6 +53,6 @@ class Artist(db.Model):
 class Show(db.Model):
     __tablename__ = 'Show'
     id = db.Column(db.Integer, primary_key=True)
-    venue_id = db.Column(db.ForeignKey('Venue.id'))
-    artist_id = db.Column(db.ForeignKey('Artist.id'))
+    venue_id = db.Column(db.ForeignKey('Venue.id'), nullable=False)
+    artist_id = db.Column(db.ForeignKey('Artist.id'), nullable=False)
     start_time = db.Column(db.DateTime, nullable=False)
