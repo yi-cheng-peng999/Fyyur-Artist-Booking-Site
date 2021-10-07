@@ -9,7 +9,8 @@ from flask import render_template, request, flash, redirect, url_for, jsonify
 import logging
 from logging import Formatter, FileHandler
 from forms import *
-from models import app, db, Venue, Artist, Show
+from models import db, Venue, Artist, Show
+from config import app
 
 #----------------------------------------------------------------------------#
 # Filters.
